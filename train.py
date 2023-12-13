@@ -10,8 +10,9 @@ import torch.nn.functional as F
 import torch.optim
 import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
+from torchvision.datasets import VOCSegmentation
 
-from util import dataset, transform, config
+from util import transform, config
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU
 
 
@@ -53,6 +54,12 @@ writer = SummaryWriter(args.save_path)
 
 
 def main():
+    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(x) for x in args.train_gpu)
+    assert len(args.train_gpu) == 1
+    args.sync_bn = False
+    args.distributed = False
+    args.multiprocessing_distributed = False
+
     from model.pspnet import PSPNet
     criterion = nn.CrossEntropyLoss(ignore_index=args.ignore_label)
     model = PSPNet(layers=args.layers, classes=args.classes, zoom_factor=args.zoom_factor, criterion=criterion)
@@ -75,6 +82,8 @@ def main():
     logger.info("Classes: {}".format(args.classes))
     logger.info(model)
 
+    model = model.cuda()
+
     if args.weight:
         if os.path.isfile(args.weight):
             logger.info("=> loading weight '{}'".format(args.weight))
@@ -87,8 +96,7 @@ def main():
     if args.resume:
         if os.path.isfile(args.resume):
             logger.info("=> loading checkpoint '{}'".format(args.resume))
-            # checkpoint = torch.load(args.resume)
-            checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage.cuda())
+            checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
@@ -110,34 +118,27 @@ def main():
         transform.Crop([args.train_h, args.train_w], crop_type='rand', padding=mean, ignore_label=args.ignore_label),
         transform.ToTensor(),
         transform.Normalize(mean=mean, std=std)])
-    train_data = dataset.SemData(split='train', data_root=args.data_root, data_list=args.train_list,
+    train_data = VOCSegmentation(root=args.data_root, year='2012', image_set='train', download=True,
                                  transform=train_transform)
-    if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_data)
-    else:
-        train_sampler = None
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=(train_sampler is None),
-                                               num_workers=args.workers, pin_memory=True, sampler=train_sampler,
-                                               drop_last=True)
+
+    assert not args.distributed
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
+                                               num_workers=args.workers, drop_last=True)
     if args.evaluate:
         val_transform = transform.Compose([
             transform.Crop([args.train_h, args.train_w], crop_type='center', padding=mean,
                            ignore_label=args.ignore_label),
             transform.ToTensor(),
             transform.Normalize(mean=mean, std=std)])
-        val_data = dataset.SemData(split='val', data_root=args.data_root, data_list=args.val_list,
+        val_data = VOCSegmentation(root=args.data_root, year='2012', image_set='val', download=True,
                                    transform=val_transform)
-        if args.distributed:
-            val_sampler = torch.utils.data.distributed.DistributedSampler(val_data)
-        else:
-            val_sampler = None
+        assert not args.distributed
         val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False,
-                                                 num_workers=args.workers, pin_memory=True, sampler=val_sampler)
+                                                 num_workers=args.workers)
 
     for epoch in range(args.start_epoch, args.epochs):
         epoch_log = epoch + 1
-        if args.distributed:
-            train_sampler.set_epoch(epoch)
+        assert not args.distributed
         loss_train, mIoU_train, mAcc_train, allAcc_train = train(train_loader, model, optimizer, epoch)
         writer.add_scalar('loss_train', loss_train, epoch_log)
         writer.add_scalar('mIoU_train', mIoU_train, epoch_log)
