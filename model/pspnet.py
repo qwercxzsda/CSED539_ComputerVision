@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torchvision import models
+
+import model.resnet as models
 
 
 class PPM(nn.Module):
