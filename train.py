@@ -11,6 +11,7 @@ import torch.optim
 import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import VOCSegmentation
+import wandb
 
 from util import transform, config
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU
@@ -308,4 +309,5 @@ def validate(val_loader, model, criterion):
 
 
 if __name__ == '__main__':
+    wandb.init(project="computer-vision", sync_tensorboard=True)
     main()
