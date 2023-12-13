@@ -2,3 +2,8 @@
 __pycache__
 venv\
 .idea
+data
+dataset
+initmodel
+wandb
+exp
