@@ -52,6 +52,7 @@ args = get_parser()
 check(args)
 logger = get_logger()
 writer = SummaryWriter(args.save_path)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def main():
@@ -82,7 +83,7 @@ def main():
     logger.info("Classes: {}".format(args.classes))
     logger.info(model)
 
-    model = model.cuda()
+    model = model.to(device)
 
     if args.weight:
         if os.path.isfile(args.weight):
@@ -133,7 +134,7 @@ def main():
         val_data = VOCSegmentation(root=args.data_root, year='2012', image_set='val', download=True,
                                    transform=val_transform)
         assert not args.distributed
-        assert args.num_workers == 0
+        assert args.workers == 0
         val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False)
 
     for epoch in range(args.start_epoch, args.epochs):
@@ -182,8 +183,8 @@ def train(train_loader, model, optimizer, epoch):
             # 'nearest' mode doesn't support align_corners mode and 'bilinear' mode is fine for downsampling
             target = F.interpolate(target.unsqueeze(1).float(), size=(h, w), mode='bilinear',
                                    align_corners=True).squeeze(1).long()
-        input = input.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
+        input = input.to(device)
+        target = target.to(device)
         output, main_loss, aux_loss = model(input, target)
         main_loss, aux_loss = torch.mean(main_loss), torch.mean(aux_loss)
         loss = main_loss + args.aux_weight * aux_loss
@@ -262,8 +263,8 @@ def validate(val_loader, model, criterion):
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
         data_time.update(time.time() - end)
-        input = input.cuda(non_blocking=True)
-        target = target.cuda(non_blocking=True)
+        input = input.to(device)
+        target = target.to(device)
         output = model(input)
         if args.zoom_factor != 8:
             output = F.interpolate(output, size=target.size()[1:], mode='bilinear', align_corners=True)
