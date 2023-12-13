@@ -55,6 +55,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def main():
+    assert torch.cuda.is_available()
     os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(x) for x in args.train_gpu)
     assert len(args.train_gpu) == 1
     args.sync_bn = False

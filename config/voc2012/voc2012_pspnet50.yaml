@@ -7,7 +7,7 @@ DATA:
 TRAIN:
   arch: psp
   layers: 50
-  sync_bn: True  # adopt sync_bn or not
+  sync_bn: False  # adopt sync_bn or not
   train_h: 473
   train_w: 473
   scale_min: 0.5  # minimum random scale
@@ -19,8 +19,8 @@ TRAIN:
   aux_weight: 0.4
   train_gpu: [ 0 ]
   workers: 0  # data loader workers
-  batch_size: 16  # batch size for training
-  batch_size_val: 8  # batch size for validation during training, memory and speed tradeoff
+  batch_size: 2  # batch size for training
+  batch_size_val: 1  # batch size for validation during training, memory and speed tradeoff
   base_lr: 0.01
   epochs: 50
   start_epoch: 0
