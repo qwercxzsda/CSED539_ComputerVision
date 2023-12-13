@@ -23,7 +23,7 @@ class PPM(nn.Module):
         out = x
         for f in self.features:
             out_one = F.interpolate(f(out), x_size[2:], mode='bilinear', align_corners=True)
-            out = torch.cat([out, out_one], dim=1)      # concatenate on channel dimension
+            out = torch.cat([out, out_one], dim=1)  # concatenate on channel dimension
         return out
 
 
