@@ -62,9 +62,14 @@ def main():
     args.distributed = False
     args.multiprocessing_distributed = False
 
-    from model.pspnet import PSPNet
     criterion = nn.CrossEntropyLoss(ignore_index=args.ignore_label)
-    model = PSPNet(layers=args.layers, classes=args.classes, zoom_factor=args.zoom_factor, criterion=criterion)
+    assert args.arch == 'psp' or args.arch == 'psp_modified'
+    if args.arch == 'psp':
+        from model.pspnet import PSPNet
+        model = PSPNet(layers=args.layers, classes=args.classes, zoom_factor=args.zoom_factor, criterion=criterion)
+    else:
+        from model.pspnet_modified import PSPNet
+        model = PSPNet(layers=args.layers, classes=args.classes, zoom_factor=args.zoom_factor, criterion=criterion)
     modules_ori = [model.layer0, model.layer1, model.layer2, model.layer3, model.layer4]
     modules_new = [model.ppm, model.cls, model.aux]
 
