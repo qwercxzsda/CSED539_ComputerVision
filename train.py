@@ -9,7 +9,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim
 import torch.utils.data
-from torch.utils.tensorboard import SummaryWriter
 
 import wandb
 from util import transform, config, dataset
@@ -47,10 +46,20 @@ def check(args):
     assert (args.train_h - 1) % 8 == 0 and (args.train_w - 1) % 8 == 0
 
 
+class Writer:
+    def __init__(self):
+        from torch.utils.tensorboard import SummaryWriter
+        self.writer = SummaryWriter()
+
+    def add_scalar(self, tag, scalar_value, global_step):
+        self.writer.add_scalar(tag, scalar_value, global_step)
+        wandb.log({tag: scalar_value}, step=global_step)
+
+
 args = get_parser()
 check(args)
 logger = get_logger()
-writer = SummaryWriter(args.save_path)
+writer = Writer()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -61,6 +70,7 @@ def main():
     args.sync_bn = False
     args.distributed = False
     args.multiprocessing_distributed = False
+    wandb.config.update(args)
 
     criterion = nn.CrossEntropyLoss(ignore_index=args.ignore_label)
     assert args.arch == 'psp' or args.arch == 'psp_modified'
@@ -314,5 +324,5 @@ def validate(val_loader, model, criterion):
 
 
 if __name__ == '__main__':
-    wandb.init(project="computer-vision", sync_tensorboard=True)
+    wandb.init(project="computer-vision")
     main()
