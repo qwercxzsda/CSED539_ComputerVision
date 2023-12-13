@@ -9,9 +9,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim
 import torch.utils.data
+import wandb
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import VOCSegmentation
-import wandb
 
 from util import transform, config
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU
@@ -77,7 +77,6 @@ def main():
     if args.sync_bn:
         model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-    writer = SummaryWriter(args.save_path)
     logger.info(args)
     logger.info("=> creating model ...")
     logger.info("Classes: {}".format(args.classes))
@@ -124,7 +123,7 @@ def main():
 
     assert not args.distributed
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
-                                               num_workers=args.workers, drop_last=True)
+                                               drop_last=True)
     if args.evaluate:
         val_transform = transform.Compose([
             transform.Crop([args.train_h, args.train_w], crop_type='center', padding=mean,
@@ -134,8 +133,8 @@ def main():
         val_data = VOCSegmentation(root=args.data_root, year='2012', image_set='val', download=True,
                                    transform=val_transform)
         assert not args.distributed
-        val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False,
-                                                 num_workers=args.workers)
+        assert args.num_workers == 0
+        val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False)
 
     for epoch in range(args.start_epoch, args.epochs):
         epoch_log = epoch + 1
@@ -271,7 +270,7 @@ def validate(val_loader, model, criterion):
         loss = criterion(output, target)
 
         n = input.size(0)
-        assert (args.multiprocessing_distributed)
+        assert not args.multiprocessing_distributed
         loss = torch.mean(loss)
 
         output = output.max(1)[1]
