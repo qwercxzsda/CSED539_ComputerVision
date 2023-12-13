@@ -53,7 +53,7 @@ class Writer:
 
     def add_scalar(self, tag, scalar_value, global_step):
         self.writer.add_scalar(tag, scalar_value, global_step)
-        wandb.log({tag: scalar_value}, step=global_step)
+        wandb.log({tag: scalar_value})
 
 
 args = get_parser()
