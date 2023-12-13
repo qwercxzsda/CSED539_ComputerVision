@@ -9,10 +9,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim
 import torch.utils.data
-import wandb
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.datasets import VOCSegmentation
 
+import wandb
 from util import transform, config, dataset
 from util.util import AverageMeter, poly_learning_rate, intersectionAndUnionGPU
 
@@ -119,7 +118,8 @@ def main():
         transform.Crop([args.train_h, args.train_w], crop_type='rand', padding=mean, ignore_label=args.ignore_label),
         transform.ToTensor(),
         transform.Normalize(mean=mean, std=std)])
-    train_data = dataset.SemData(split='train', data_root=args.data_root, data_list=args.train_list, transform=train_transform)
+    train_data = dataset.SemData(split='train', data_root=args.data_root, data_list=args.train_list,
+                                 transform=train_transform)
 
     assert not args.distributed
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True,
@@ -130,7 +130,8 @@ def main():
                            ignore_label=args.ignore_label),
             transform.ToTensor(),
             transform.Normalize(mean=mean, std=std)])
-        val_data = dataset.SemData(split='val', data_root=args.data_root, data_list=args.val_list, transform=val_transform)
+        val_data = dataset.SemData(split='val', data_root=args.data_root, data_list=args.val_list,
+                                   transform=val_transform)
         assert not args.distributed
         assert args.workers == 0
         val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.batch_size_val, shuffle=False)
