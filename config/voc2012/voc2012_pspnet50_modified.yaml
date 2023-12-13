@@ -5,7 +5,7 @@ DATA:
   classes: 21
 
 TRAIN:
-  arch: psp
+  arch: psp_modified
   layers: 50
   sync_bn: False  # adopt sync_bn or not
   train_h: 473
