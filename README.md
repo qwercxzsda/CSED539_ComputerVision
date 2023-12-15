@@ -3,6 +3,8 @@
 ## Train
 Download VOC2012 `JPEGImages` folder to `./dataset/voc2012`.
 
+Download `initmodel` folder from https://github.com/hszhao/semseg or [here](https://drive.google.com/drive/folders/15wx9vOM0euyizq-M1uINgN0_wjVRf9J3) and place the foler in `.`(project root).
+
 Make folder `./exp/voc2012/pspnet50/model`. This is the path where the trained model will be saved.
 
 Run `python train.py --config config/voc2012/voc2012_pspnet50.yaml` to train the baseline model.
