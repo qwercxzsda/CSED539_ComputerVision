@@ -1,9 +1,9 @@
 .DS_Store*
 __pycache__
-venv\
+venv
 .idea
 data
-dataset
+dataset/voc2012/JPEGImages
 initmodel
 wandb
 exp
